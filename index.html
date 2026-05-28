@@ -253,6 +253,35 @@ body::before {
 }
 .btn-new-list:active { transform: translateY(0); }
 
+/* EXPORT/IMPORT BUTTONS */
+.btn-export, .btn-import {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border2);
+  border-radius: 12px;
+  padding: 13px 18px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+}
+.btn-export:hover, .btn-import:hover {
+  border-color: var(--accent);
+  background: var(--surface2);
+  transform: translateY(-1px);
+}
+.btn-export:disabled, .btn-import:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ──────────────────────────────────────────
    INSTALL BANNER
 ─────────────────────────────────────────── */
@@ -807,6 +836,14 @@ body::before {
     </div>
     <div class="header-right">
       <span class="header-meta" id="listCountMeta">0 lists</span>
+      <button class="btn-export" id="btnExport" title="Export current list" aria-label="Export list" disabled>
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        Export
+      </button>
+      <button class="btn-import" id="btnImport" title="Import list" aria-label="Import list">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+        Import
+      </button>
       <button class="btn-theme" id="btnTheme" title="Toggle theme" aria-label="Toggle dark/light mode">☀️</button>
       <button class="btn-new-list" id="btnNewList">
         <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -962,7 +999,7 @@ function deleteList(listId) {
 function addItem(listId, name, qty) {
   const list = state.lists.find(l => l.id === listId);
   if (!list) return;
-  list.items.push({ id: uid(), name, qty: qty || 1, checked: false });
+  list.items.unshift({ id: uid(), name, qty: qty || 1, checked: false });
   saveState(state);
   renderMain();
   renderSidebar();
@@ -1031,6 +1068,7 @@ function render() {
 
   renderSidebar();
   renderMain();
+  updateExportButton();
 }
 
 function renderSidebar() {
@@ -1068,6 +1106,8 @@ function renderSidebar() {
   tabs.querySelectorAll('.btn-delete-list').forEach(btn => {
     btn.addEventListener('click', e => { e.stopPropagation(); deleteList(btn.dataset.del); });
   });
+  
+  updateExportButton();
 }
 
 function renderMain() {
@@ -1168,6 +1208,93 @@ function escHtml(str) {
 }
 
 // ─────────────────────────────────────────
+//  EXPORT / IMPORT
+// ─────────────────────────────────────────
+function updateExportButton() {
+  const btn = document.getElementById('btnExport');
+  if (btn) {
+    const hasActiveList = getActiveList() !== null;
+    btn.disabled = !hasActiveList;
+  }
+}
+
+function exportList() {
+  const list = getActiveList();
+  if (!list) return;
+  
+  const exportData = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    list: {
+      name: list.name,
+      items: list.items.map(item => ({
+        name: item.name,
+        qty: item.qty,
+        checked: item.checked
+      }))
+    }
+  };
+  
+  const json = JSON.stringify(exportData, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${list.name.replace(/[^a-z0-9]/gi, '_')}_list.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('📤 List exported!');
+}
+
+function importList(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.version || !data.list || !data.list.name || !Array.isArray(data.list.items)) {
+        throw new Error('Invalid format');
+      }
+      
+      const newList = {
+        id: uid(),
+        name: data.list.name,
+        items: data.list.items.map(item => ({
+          id: uid(),
+          name: item.name,
+          qty: item.qty || 1,
+          checked: !!item.checked
+        })),
+        createdAt: Date.now()
+      };
+      
+      state.lists.push(newList);
+      state.activeListId = newList.id;
+      saveState(state);
+      render();
+      showToast(`📥 "${newList.name}" imported!`);
+    } catch (err) {
+      showToast('❌ Invalid file format', 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handleImportClick() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      importList(file);
+    }
+  });
+  input.click();
+}
+
+// ─────────────────────────────────────────
 //  INIT
 // ─────────────────────────────────────────
 document.getElementById('btnNewList').addEventListener('click', () => {
@@ -1181,6 +1308,9 @@ document.getElementById('btnNewList').addEventListener('click', () => {
     }
   });
 });
+
+document.getElementById('btnExport').addEventListener('click', exportList);
+document.getElementById('btnImport').addEventListener('click', handleImportClick);
 
 render();
 
