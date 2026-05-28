@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FreshPantry | Smart Grocery Lists</title>
+  <meta name="theme-color" content="#2b6e4f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FreshPantry">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232b6e4f'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E🛒%3C/text%3E%3C/svg%3E">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', 'Poppins', sans-serif;
+    }
+    body {
+      background: linear-gradient(145deg, #e9f0e6 0%, #d4e2ce 100%);
+      min-height: 100vh;
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .app-wrapper {
+      max-width: 1280px;
+      width: 100%;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.96);
+      backdrop-filter: blur(2px);
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.35);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,240,0.7);
+    }
+    .top-bar {
+      background: #ffffffdd;
+      padding: 1.2rem 2rem;
+      border-bottom: 2px solid #e9dfd1;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .logo h1 {
+      font-size: 1.7rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1e3c2c, #2b6e4f);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .list-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .list-selector {
+      background: #f5efe6;
+      padding: 8px 14px;
+      border-radius: 48px;
+      border: 1px solid #dccfbe;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-icon {
+      background: #f0ebe2;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 40px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+      color: #2b5a41;
+    }
+    .btn-icon.danger {
+      color: #b13e3e;
+      background: #ffeae5;
+    }
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.8rem 2rem;
+      background: #fefaf5;
+      border-bottom: 1px solid #f0e4d6;
+      flex-wrap: wrap;
+    }
+    .stats-badge {
+      background: #eef4ea;
+      padding: 6px 16px;
+      border-radius: 32px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #2b5a41;
+    }
+    .clear-completed {
+      background: none;
+      border: 1px solid #e2cfbe;
+      padding: 5px 14px;
+      border-radius: 32px;
+      cursor: pointer;
+    }
+    .list-header {
+      display: grid;
+      grid-template-columns: 95px 1fr 60px 70px;
+      background: #f8f3ec;
+      padding: 10px 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #6f5e4c;
+      border-bottom: 1px solid #e5d9cd;
+    }
+    .grocery-list-container {
+      max-height: 55vh;
+      overflow-y: auto;
+      background: white;
+    }
+    .grocery-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid #ede3d7;
+      flex-wrap: wrap;
+    }
+    .item-qty {
+      width: 85px;
+      padding: 8px 10px;
+      border-radius: 40px;
+      border: 1.5px solid #e2d5c6;
+      text-align: center;
+      font-weight: 600;
+    }
+    .item-name {
+      flex: 1;
+      padding: 8px 12px;
+      border-radius: 40px;
+      border: 1.5px solid #e2d5c6;
+      font-weight: 500;
+      min-width: 140px;
+    }
+    .item-name.crossed {
+      text-decoration: line-through;
+      color: #8f9a8b;
+      background: #faf3ea;
+    }
+    .item-checkbox {
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      accent-color: #2b6e4f;
+    }
+    .delete-btn {
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #b87a60;
+    }
+    .delete-btn:hover {
+      background: #f3e3da;
+      color: #c73f1e;
+    }
+    .add-section {
+      background: #fcf8f2;
+      padding: 1.4rem 2rem;
+      border-top: 2px solid #efe2d4;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+    .add-field {
+      flex: 2;
+      min-width: 150px;
+    }
+    .add-field label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #7c6a56;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .add-field input {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 48px;
+      border: 1px solid #ddcfbf;
+      background: white;
+    }
+    .btn-add {
+      background: #2b6e4f;
+      border: none;
+      padding: 0 28px;
+      height: 48px;
+      border-radius: 48px;
+      font-weight: 700;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .empty-message {
+      text-align: center;
+      padding: 3rem;
+      color: #a7b6a1;
+      font-weight: 500;
+    }
+    @media (max-width: 680px) {
+      body { padding: 0.8rem; }
+      .list-header { display: none; }
+      .grocery-item { flex-wrap: wrap; gap: 8px; }
+      .item-qty { width: 80px; }
+      .item-name { flex-basis: calc(50% - 30px); }
+      .delete-btn { margin-left: auto; }
+      .add-section { flex-direction: column; align-items: stretch; }
+      .btn-add { justify-content: center; }
+    }
+    @keyframes fadeSlide {
+      from { opacity: 0; transform: translateY(6px);}
+      to { opacity: 1; transform: translateY(0);}
+    }
+    .grocery-item { animation: fadeSlide 0.2s ease; }
+  </style>
+</head>
+<body>
+<div class="app-wrapper" id="appRoot">
+  <div class="top-bar">
+    <div class="logo"><h1><span>🛒</span> FreshPantry</h1></div>
+    <div class="list-controls">
+      <select id="listSelector" class="list-selector"></select>
+      <button id="newListBtn" class="btn-icon">➕ New List</button>
+      <button id="deleteListBtn" class="btn-icon danger">🗑️ Delete List</button>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stats-badge" id="statsDisplay">📋 0 items · 0 checked</div>
+    <button id="clearCompletedBtn" class="clear-completed">✓ Clear completed</button>
+  </div>
+  <div class="list-header">
+    <span>📦 Qty</span><span>🥬 Item</span><span>✔️ Done</span><span>🗑️</span>
+  </div>
+  <div id="groceryListContainer" class="grocery-list-container"></div>
+  <div class="add-section">
+    <div class="add-field"><label>➕ New item</label><input type="text" id="newItemName" placeholder="e.g., Basil, Cheese..." autocomplete="off"></div>
+    <div class="add-field"><label>🔢 Quantity</label><input type="number" id="newItemQty" value="1" min="0" step="1"></div>
+    <button id="addItemBtn" class="btn-add">+ Add to list</button>
+  </div>
+</div>
+
+<script>
+  // ---------- STORAGE ----------
+  const STORAGE_KEY = "freshpantry_lists";
+  const CURRENT_LIST_KEY = "freshpantry_currentList";
+  let lists = {};
+  let currentListId = null;
+  function generateId() { return Date.now() + '-' + Math.random().toString(36).substr(2, 6); }
+  function loadData() {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      lists = JSON.parse(stored);
+    } else {
+      const defaultId = generateId();
+      lists = { [defaultId]: { id: defaultId, name: "Weekly Groceries", items: [
+        { id: generateId(), name: "Organic Avocados", quantity: 3, checked: false },
+        { id: generateId(), name: "Farm Milk", quantity: 2, checked: false },
+        { id: generateId(), name: "Sourdough Bread", quantity: 1, checked: false },
+        { id: generateId(), name: "Free-range Eggs", quantity: 6, checked: false }
+      ] } };
+    }
+    const savedCurrent = localStorage.getItem(CURRENT_LIST_KEY);
+    if (savedCurrent && lists[savedCurrent]) currentListId = savedCurrent;
+    else currentListId = Object.keys(lists)[0] || null;
+    if (!currentListId && Object.keys(lists).length) currentListId = Object.keys(lists)[0];
+    if (Object.keys(lists).length === 0) {
+      const freshId = generateId();
+      lists[freshId] = { id: freshId, name: "My List", items: [] };
+      currentListId = freshId;
+      saveToLocal();
+    }
+  }
+  function saveToLocal() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
+    if (currentListId) localStorage.setItem(CURRENT_LIST_KEY, currentListId);
+  }
+  function getCurrentItems() { return currentListId && lists[currentListId] ? lists[currentListId].items : []; }
+  function saveCurrentItems(items) { if(currentListId && lists[currentListId]) { lists[currentListId].items = items; saveToLocal(); } }
+  function renderAll() { renderListSelector(); renderGroceryItems(); updateStatsUI(); }
+  function renderListSelector() {
+    const sel = document.getElementById('listSelector');
+    if (!sel) return;
+    sel.innerHTML = '';
+    for (const [id, list] of Object.entries(lists)) {
+      const opt = document.createElement('option');
+      opt.value = id; opt.textContent = list.name;
+      if (id === currentListId) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  }
+  function createItemElement(item) {
+    const row = document.createElement('div'); row.className = 'grocery-item';
+    const qtyInp = document.createElement('input'); qtyInp.type = 'number'; qtyInp.className = 'item-qty'; qtyInp.value = item.quantity; qtyInp.min = 0;
+    qtyInp.addEventListener('change', (e) => { let v = parseInt(e.target.value,10); if(!isNaN(v)&&v>=0) item.quantity=v; saveCurrentItems(getCurrentItems()); updateStatsUI(); else qtyInp.value=item.quantity; });
+    const nameInp = document.createElement('input'); nameInp.type = 'text'; nameInp.className = 'item-name'; if(item.checked) nameInp.classList.add('crossed'); nameInp.value = item.name;
+    nameInp.addEventListener('change', (e) => { let newName = e.target.value.trim(); if(newName) item.name = newName; saveCurrentItems(getCurrentItems()); renderAll(); });
+    const chk = document.createElement('input'); chk.type = 'checkbox'; chk.className = 'item-checkbox'; chk.checked = item.checked;
+    chk.addEventListener('change', () => { item.checked = chk.checked; if(chk.checked) nameInp.classList.add('crossed'); else nameInp.classList.remove('crossed'); saveCurrentItems(getCurrentItems()); updateStatsUI(); });
+    const del = document.createElement('button'); del.innerHTML = '🗑️'; del.className = 'delete-btn';
+    del.addEventListener('click', () => { let items = getCurrentItems(); let newItems = items.filter(i => i.id !== item.id); saveCurrentItems(newItems); renderAll(); });
+    row.append(qtyInp, nameInp, chk, del); if(item.checked) nameInp.classList.add('crossed'); return row;
+  }
+  function renderGroceryItems() {
+    const container = document.getElementById('groceryListContainer'); if(!container) return;
+    container.innerHTML = '';
+    const items = getCurrentItems();
+    if(items.length === 0) { container.innerHTML = '<div class="empty-message">🛍️ This list is empty. Add groceries using the form above.</div>'; return; }
+    items.forEach(i => container.appendChild(createItemElement(i)));
+  }
+  function updateStatsUI() {
+    const items = getCurrentItems(); const total = items.length; const checked = items.filter(i=>i.checked).length;
+    const span = document.getElementById('statsDisplay'); if(span) span.innerHTML = `📋 ${total} item${total!==1?'s':''} · ✓ ${checked} checked`;
+  }
+  function addNewList() { let name = prompt("Enter new list name:","Shopping List") || "My List"; name = name.trim()||"Untitled"; const newId = generateId(); lists[newId] = { id: newId, name: name, items: [] }; currentListId = newId; saveToLocal(); renderAll(); }
+  function deleteCurrentList() { if(Object.keys(lists).length === 1) { alert("Cannot delete last list. Create a new one first."); return; } if(confirm(`Delete "${lists[currentListId].name}"?`)) { delete lists[currentListId]; const ids = Object.keys(lists); currentListId = ids[0] || null; if(!currentListId){ const freshId=generateId(); lists[freshId]={id:freshId,name:"My Pantry",items:[]}; currentListId=freshId; } saveToLocal(); renderAll(); } }
+  function switchList(id) { if(lists[id]) { currentListId = id; saveToLocal(); renderAll(); } }
+  function clearCompleted() { let items = getCurrentItems(); let filtered = items.filter(i => !i.checked); if(filtered.length !== items.length) { saveCurrentItems(filtered); renderAll(); } }
+  function addNewItemToList(name, qtyVal) { let trimmed = name.trim() || "Grocery item"; let qty = parseInt(qtyVal,10); if(isNaN(qty)||qty<0) qty=1; const items = getCurrentItems(); items.push({ id: generateId(), name: trimmed, quantity: qty, checked: false }); saveCurrentItems(items); renderAll(); }
+  function bindEvents() {
+    document.getElementById('listSelector')?.addEventListener('change', e => switchList(e.target.value));
+    document.getElementById('newListBtn')?.addEventListener('click', addNewList);
+    document.getElementById('deleteListBtn')?.addEventListener('click', deleteCurrentList);
+    document.getElementById('clearCompletedBtn')?.addEventListener('click', clearCompleted);
+    document.getElementById('addItemBtn')?.addEventListener('click', () => { addNewItemToList(document.getElementById('newItemName').value, document.getElementById('newItemQty').value); document.getElementById('newItemName').value = ''; document.getElementById('newItemQty').value = '1'; });
+    document.getElementById('newItemName')?.addEventListener('keypress', e => { if(e.key === 'Enter') { addNewItemToList(e.target.value, document.getElementById('newItemQty').value); document.getElementById('newItemName').value = ''; document.getElementById('newItemQty').value = '1'; } });
+  }
+  function registerPWA() {
+    const manifestObj = { name: "FreshPantry Grocery App", short_name: "FreshPantry", start_url: ".", display: "standalone", theme_color: "#2b6e4f", background_color: "#e9f0e6", icons: [{ src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%232b6e4f'/%3E%3Ctext x='50' y='67' font-size='55' text-anchor='middle' fill='white' font-family='Arial'%3E🛒%3C/text%3E%3C/svg%3E", sizes: "any", type: "image/svg+xml" }] };
+    const manifestBlob = new Blob([JSON.stringify(manifestObj)], {type: 'application/json'});
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    const link = document.createElement('link'); link.rel = 'manifest'; link.href = manifestURL; document.head.appendChild(link);
+    const swCode = `const CACHE_NAME='freshpantry-v2'; const urlsToCache=['./','./index.html']; self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(urlsToCache)))); self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>caches.match('./'))))); self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(k=>Promise.all(k.map(key=>key!==CACHE_NAME&&caches.delete(key))))));`;
+    const swBlob = new Blob([swCode], {type: 'application/javascript'});
+    const swURL = URL.createObjectURL(swBlob);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register(swURL).catch(e=>console.log(e));
+  }
+  function init() { loadData(); bindEvents(); renderAll(); registerPWA(); }
+  init();
+</script>
+</body>
+</html>
