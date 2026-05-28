@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a1a2e">
+<meta name="description" content="Grocery List PWA - Manage your shopping lists">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GroceryList">
+<title>GroceryList</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0f0e17;
+    --surface: #1a1930;
+    --surface2: #232240;
+    --surface3: #2d2b52;
+    --accent: #e8c547;
+    --accent2: #ff6b6b;
+    --accent3: #6bcbff;
+    --text: #fffffe;
+    --text-muted: #a7a9be;
+    --text-dim: #6b6d84;
+    --border: rgba(255,255,255,0.07);
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(232,197,71,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(107,203,255,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 60% 40%, rgba(255,107,107,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* HEADER */
+  .header {
+    padding: 40px 0 32px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .header-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .header-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0.85;
+  }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .header h1 span {
+    color: var(--accent);
+  }
+
+  .header-meta {
+    font-size: 13px;
+    color: var(--text-muted);
+    padding-bottom: 4px;
+  }
+
+  .header-meta strong {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* NEW LIST BTN */
+  .btn-new-list {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 12px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(232,197,71,0.25);
+  }
+
+  .btn-new-list:hover {
+    background: #f0d060;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(232,197,71,0.35);
+  }
+
+  .btn-new-list:active { transform: translateY(0); }
+
+  /* LISTS GRID */
+  .lists-container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .lists-container { grid-template-columns: 1fr; }
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: sticky;
+    top: 20px;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    padding-left: 4px;
+  }
+
+  .list-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .list-tab {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    gap: 8px;
+  }
+
+  .list-tab::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .list-tab:hover {
+    background: var(--surface2);
+    border-color: rgba(255,255,255,0.12);
+  }
+
+  .list-tab.active {
+    background: var(--surface2);
+    border-color: rgba(232,197,71,0.25);
+  }
+
+  .list-tab.active::before { opacity: 1; }
+
+  .list-tab-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .list-tab.active .list-tab-name { color: var(--accent); }
+
+  .list-tab-count {
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--surface3);
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .list-tab.active .list-tab-count {
+    background: rgba(232,197,71,0.15);
+    color: var(--accent);
+  }
+
+  /* DELETE TAB BTN */
+  .btn-delete-list {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 6px;
+    font-size: 16px;
+    line-height: 1;
+    transition: var(--transition);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-delete-list:hover {
+    color: var(--accent2);
+    background: rgba(255,107,107,0.12);
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    background: var(--surface);
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+  }
+
+  .empty-icon { font-size: 48px; margin-bottom: 16px; display: block; }
+  .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 8px; color: var(--text-muted); }
+  .empty-state p { font-size: 14px; color: var(--text-dim); }
+
+  /* MAIN CONTENT */
+  .main-content {}
+
+  .list-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    animation: slideIn 0.28s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .list-card-header {
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .list-card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .list-card-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .stat-pill {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--surface3);
+    color: var(--text-muted);
+  }
+
+  .stat-pill.done {
+    background: rgba(107,203,255,0.12);
+    color: var(--accent3);
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap {
+    height: 2px;
+    background: var(--surface3);
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent3));
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* ADD ITEM FORM */
+  .add-item-form {
+    padding: 20px 24px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .input-qty {
+    width: 72px;
+    flex-shrink: 0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 12px;
+    text-align: center;
+    transition: var(--transition);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+
+  .input-qty::-webkit-inner-spin-button,
+  .input-qty::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  .input-item {
+    flex: 1;
+    min-width: 160px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 11px 16px;
+    transition: var(--transition);
+    outline: none;
+  }
+
+  .input-qty:focus, .input-item:focus {
+    border-color: rgba(232,197,71,0.4);
+    background: var(--surface3);
+    box-shadow: 0 0 0 3px rgba(232,197,71,0.08);
+  }
+
+  .input-qty::placeholder, .input-item::placeholder { color: var(--text-dim); }
+
+  .btn-add-item {
+    background: var(--surface3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-sm);
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 20px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .btn-add-item:hover {
+    background: rgba(232,197,71,0.15);
+    border-color: rgba(232,197,71,0.3);
+    transform: translateY(-1px);
+  }
+
+  .btn-add-item:active { transform: translateY(0); }
+
+  .form-hint {
+    width: 100%;
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 0 2px;
+  }
+
+  /* ITEMS LIST */
+  .items-list {
+    list-style: none;
+    padding: 8px 0;
+  }
+
+  .item-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    gap: 14px;
+    transition: var(--transition);
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    animation: itemIn 0.2s ease;
+  }
+
+  @keyframes itemIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .item-row:last-child { border-bottom: none; }
+
+  .item-row:hover { background: rgba(255,255,255,0.025); }
+
+  .item-row.checked { opacity: 0.5; }
+
+  /* Custom checkbox */
+  .item-check {
+    width: 22px; height: 22px;
+    flex-shrink: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    border: 2px solid var(--surface3);
+    border-radius: 6px;
+    background: var(--surface2);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .item-check:hover { border-color: var(--accent); }
+
+  .item-check:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .item-check:checked::after {
+    content: '✓';
+    position: absolute;
+    font-size: 13px;
+    color: var(--bg);
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  /* Qty badge */
+  .item-qty-badge {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 32px;
+    height: 24px;
+    background: var(--surface3);
+    color: var(--accent);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .item-name {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+    transition: var(--transition);
+  }
+
+  .item-row.checked .item-name {
+    text-decoration: line-through;
+    color: var(--text-dim);
+  }
+
+  .btn-delete-item {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: var(--transition);
+    opacity: 0;
+    flex-shrink: 0;
+  }
+
+  .item-row:hover .btn-delete-item { opacity: 1; }
+
+  .btn-delete-item:hover {
+    color: var(--accent2);
+    background: rgba(255,107,107,0.12);
+  }
+
+  /* EMPTY ITEMS */
+  .items-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+
+  .items-empty span { font-size: 28px; display: block; margin-bottom: 10px; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.18s ease;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius);
+    padding: 28px;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: var(--shadow);
+    animation: modalIn 0.22s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.94) translateY(12px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .modal p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.6;
+  }
+
+  .modal p strong { color: var(--text); }
+
+  .modal-input {
+    width: 100%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    padding: 13px 16px;
+    outline: none;
+    transition: var(--transition);
+    margin-bottom: 20px;
+  }
+
+  .modal-input:focus {
+    border-color: rgba(232,197,71,0.4);
+    box-shadow: 0 0 0 3px rgba(232,197,71,0.08);
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 18px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-cancel:hover { background: var(--surface); color: var(--text); }
+
+  .btn-confirm {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 22px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .btn-confirm:hover { background: #f0d060; }
+
+  .btn-confirm.danger {
+    background: var(--accent2);
+    box-shadow: 0 4px 16px rgba(255,107,107,0.25);
+  }
+
+  .btn-confirm.danger:hover { background: #ff8585; }
+
+  /* TOAST */
+  .toast-container {
+    position: fixed;
+    bottom: 28px;
+    right: 24px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .toast {
+    background: var(--surface2);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    animation: toastIn 0.22s cubic-bezier(0.4,0,0.2,1);
+    max-width: 280px;
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .toast.out {
+    animation: toastOut 0.2s ease forwards;
+  }
+
+  @keyframes toastOut {
+    to { opacity: 0; transform: translateX(20px); }
+  }
+
+  .toast.error { border-left-color: var(--accent2); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+  /* INSTALL BANNER */
+  .install-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(232,197,71,0.12), rgba(107,203,255,0.08));
+    border: 1px solid rgba(232,197,71,0.2);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .install-banner.visible { display: flex; }
+
+  .install-banner-text { font-size: 13px; color: var(--text-muted); }
+  .install-banner-text strong { color: var(--text); }
+
+  .btn-install {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--bg);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .btn-dismiss-install {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 540px) {
+    .header { padding: 24px 0 20px; }
+    .add-item-form { padding: 14px 16px; }
+    .item-row { padding: 12px 16px; }
+    .list-card-header { padding: 16px; }
+    .btn-delete-item { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Install Banner -->
+  <div class="install-banner" id="installBanner">
+    <span class="install-banner-text"><strong>Add to Home Screen</strong> — use GroceryList offline</span>
+    <button class="btn-install" id="btnInstall">Install</button>
+    <button class="btn-dismiss-install" id="btnDismissInstall" title="Dismiss">×</button>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-title">
+      <span class="header-eyebrow">Your Pantry Planner</span>
+      <h1>Grocery<span>.</span></h1>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+      <span class="header-meta" id="listCountMeta">0 lists</span>
+      <button class="btn-new-list" id="btnNewList">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        New List
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <div class="lists-container" id="listsContainer">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Modals populated by JS -->
+<div id="modalContainer"></div>
+
+<script>
+// ─────────────────────────────────────────
+//  STATE & STORAGE
+// ─────────────────────────────────────────
+const STORAGE_KEY = 'grocery_lists_v2';
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { lists: [], activeListId: null };
+  } catch { return { lists: [], activeListId: null }; }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+function getActiveList() {
+  return state.lists.find(l => l.id === state.activeListId) || null;
+}
+
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// ─────────────────────────────────────────
+//  MODAL
+// ─────────────────────────────────────────
+function showModal({ title, message, inputPlaceholder, confirmText, confirmClass = '', onConfirm, onCancel }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>${title}</h3>
+      ${message ? `<p>${message}</p>` : ''}
+      ${inputPlaceholder !== undefined ? `<input class="modal-input" id="modalInput" type="text" placeholder="${inputPlaceholder}" maxlength="60" autocomplete="off">` : ''}
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modalCancel">Cancel</button>
+        <button class="btn-confirm ${confirmClass}" id="modalConfirm">${confirmText}</button>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalContainer').appendChild(overlay);
+
+  const input = overlay.querySelector('#modalInput');
+  const confirmBtn = overlay.querySelector('#modalConfirm');
+  const cancelBtn = overlay.querySelector('#modalCancel');
+
+  if (input) {
+    setTimeout(() => input.focus(), 60);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmBtn.click();
+      if (e.key === 'Escape') cancelBtn.click();
+    });
+  }
+
+  const close = () => overlay.remove();
+
+  cancelBtn.addEventListener('click', () => { close(); onCancel?.(); });
+  confirmBtn.addEventListener('click', () => {
+    const val = input ? input.value.trim() : null;
+    close();
+    onConfirm(val);
+  });
+
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) { close(); onCancel?.(); }
+  });
+}
+
+// ─────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────
+function showToast(msg, type = '') {
+  const tc = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  tc.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('out');
+    setTimeout(() => t.remove(), 200);
+  }, 2800);
+}
+
+// ─────────────────────────────────────────
+//  ACTIONS
+// ─────────────────────────────────────────
+function createList(name) {
+  const list = { id: uid(), name, items: [], createdAt: Date.now() };
+  state.lists.push(list);
+  state.activeListId = list.id;
+  saveState(state);
+  render();
+  showToast(`"${name}" created`);
+}
+
+function deleteList(listId) {
+  const list = state.lists.find(l => l.id === listId);
+  if (!list) return;
+  showModal({
+    title: 'Delete List',
+    message: `Remove <strong>"${list.name}"</strong> and all its items? This cannot be undone.`,
+    confirmText: 'Delete',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      state.lists = state.lists.filter(l => l.id !== listId);
+      if (state.activeListId === listId) {
+        state.activeListId = state.lists.length ? state.lists[state.lists.length - 1].id : null;
+      }
+      saveState(state);
+      render();
+      showToast('List deleted', 'error');
+    }
+  });
+}
+
+function addItem(listId, name, qty) {
+  const list = state.lists.find(l => l.id === listId);
+  if (!list) return;
+  list.items.push({ id: uid(), name, qty: qty || 1, checked: false });
+  saveState(state);
+  renderMain();
+  renderSidebar();
+}
+
+function deleteItem(listId, itemId) {
+  const list = state.lists.find(l => l.id === listId);
+  if (!list) return;
+  const item = list.items.find(i => i.id === itemId);
+  if (!item) return;
+  showModal({
+    title: 'Remove Item',
+    message: `Remove <strong>${item.qty}× ${item.name}</strong> from the list?`,
+    confirmText: 'Remove',
+    confirmClass: 'danger',
+    onConfirm: () => {
+      list.items = list.items.filter(i => i.id !== itemId);
+      saveState(state);
+      renderMain();
+      renderSidebar();
+      showToast('Item removed', 'error');
+    }
+  });
+}
+
+function toggleItem(listId, itemId) {
+  const list = state.lists.find(l => l.id === listId);
+  if (!list) return;
+  const item = list.items.find(i => i.id === itemId);
+  if (!item) return;
+  item.checked = !item.checked;
+  saveState(state);
+  renderMain();
+  renderSidebar();
+}
+
+// ─────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────
+function render() {
+  const container = document.getElementById('listsContainer');
+
+  if (state.lists.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column:1/-1">
+        <div class="empty-state">
+          <span class="empty-icon">🛒</span>
+          <h3>No lists yet</h3>
+          <p>Click "New List" to start planning your groceries.</p>
+        </div>
+      </div>`;
+    document.getElementById('listCountMeta').textContent = '0 lists';
+    return;
+  }
+
+  container.innerHTML = `
+    <aside class="sidebar">
+      <div class="sidebar-label">Your Lists</div>
+      <div class="list-tabs" id="listTabs"></div>
+    </aside>
+    <main class="main-content" id="mainContent"></main>
+  `;
+
+  document.getElementById('listCountMeta').textContent =
+    `${state.lists.length} list${state.lists.length !== 1 ? 's' : ''}`;
+
+  renderSidebar();
+  renderMain();
+}
+
+function renderSidebar() {
+  const tabs = document.getElementById('listTabs');
+  if (!tabs) return;
+
+  tabs.innerHTML = state.lists.map(list => {
+    const total = list.items.length;
+    const done = list.items.filter(i => i.checked).length;
+    const active = list.id === state.activeListId;
+    return `
+      <div class="list-tab${active ? ' active' : ''}" data-id="${list.id}">
+        <span class="list-tab-name">${escHtml(list.name)}</span>
+        <span class="list-tab-count">${done}/${total}</span>
+        <button class="btn-delete-list" data-del="${list.id}" title="Delete list">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>`;
+  }).join('');
+
+  tabs.querySelectorAll('.list-tab').forEach(tab => {
+    tab.addEventListener('click', e => {
+      if (e.target.closest('.btn-delete-list')) return;
+      state.activeListId = tab.dataset.id;
+      saveState(state);
+      renderSidebar();
+      renderMain();
+    });
+  });
+
+  tabs.querySelectorAll('.btn-delete-list').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      deleteList(btn.dataset.del);
+    });
+  });
+}
+
+function renderMain() {
+  const main = document.getElementById('mainContent');
+  if (!main) return;
+  const list = getActiveList();
+
+  if (!list) {
+    main.innerHTML = `<div class="empty-state"><span class="empty-icon">👈</span><h3>Select a list</h3><p>Choose a list from the sidebar.</p></div>`;
+    return;
+  }
+
+  const total = list.items.length;
+  const done = list.items.filter(i => i.checked).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  main.innerHTML = `
+    <div class="list-card">
+      <div class="list-card-header">
+        <span class="list-card-title">${escHtml(list.name)}</span>
+        <div class="list-card-stats">
+          <span class="stat-pill">${total} item${total !== 1 ? 's' : ''}</span>
+          ${done > 0 ? `<span class="stat-pill done">${done} done</span>` : ''}
+        </div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="add-item-form" id="addItemForm">
+        <input class="input-qty" id="inputQty" type="number" min="1" max="999" placeholder="Qty" value="">
+        <input class="input-item" id="inputItem" type="text" placeholder="Add an item… e.g. Milk, Eggs" maxlength="80" autocomplete="off">
+        <button class="btn-add-item" id="btnAddItem">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Add
+        </button>
+        <span class="form-hint">Leave Qty blank to default to 1</span>
+      </div>
+      ${total === 0
+        ? `<div class="items-empty"><span>🥕</span>No items yet — add some above!</div>`
+        : `<ul class="items-list" id="itemsList">
+            ${list.items.map(item => `
+              <li class="item-row${item.checked ? ' checked' : ''}" data-item-id="${item.id}">
+                <input type="checkbox" class="item-check" ${item.checked ? 'checked' : ''} title="Toggle">
+                <span class="item-qty-badge">${item.qty}×</span>
+                <span class="item-name">${escHtml(item.name)}</span>
+                <button class="btn-delete-item" title="Remove item">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </li>`).join('')}
+          </ul>`
+      }
+    </div>`;
+
+  // Attach add-item listeners
+  const btnAdd = document.getElementById('btnAddItem');
+  const inputItem = document.getElementById('inputItem');
+  const inputQty = document.getElementById('inputQty');
+
+  const doAdd = () => {
+    const name = inputItem.value.trim();
+    if (!name) { inputItem.focus(); inputItem.style.borderColor = 'rgba(255,107,107,0.5)'; setTimeout(() => inputItem.style.borderColor = '', 700); return; }
+    const qty = parseInt(inputQty.value) || 1;
+    addItem(list.id, name, qty);
+    inputItem.value = '';
+    inputQty.value = '';
+    inputItem.focus();
+  };
+
+  btnAdd.addEventListener('click', doAdd);
+  inputItem.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+
+  // Item row listeners
+  const itemsList = document.getElementById('itemsList');
+  if (itemsList) {
+    itemsList.querySelectorAll('.item-check').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const row = cb.closest('.item-row');
+        toggleItem(list.id, row.dataset.itemId);
+      });
+    });
+
+    itemsList.querySelectorAll('.btn-delete-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('.item-row');
+        deleteItem(list.id, row.dataset.itemId);
+      });
+    });
+  }
+}
+
+function escHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ─────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────
+document.getElementById('btnNewList').addEventListener('click', () => {
+  showModal({
+    title: 'New Grocery List',
+    inputPlaceholder: 'e.g. Weekly Shop, Party, Farmers Market',
+    confirmText: 'Create',
+    onConfirm: name => {
+      if (!name) { showToast('Please enter a list name', 'error'); return; }
+      createList(name);
+    }
+  });
+});
+
+render();
+
+// ─────────────────────────────────────────
+//  PWA — Service Worker (inline blob)
+// ─────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'grocery-v1';
+const ASSETS = [self.location.href];
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request)))
+  );
+});
+  `;
+
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swUrl = URL.createObjectURL(blob);
+
+  navigator.serviceWorker.register(swUrl, { scope: './' }).catch(() => {});
+}
+
+// ─────────────────────────────────────────
+//  PWA — Install prompt
+// ─────────────────────────────────────────
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('visible');
+});
+
+document.getElementById('btnInstall').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installBanner').classList.remove('visible');
+  if (outcome === 'accepted') showToast('App installed! 🎉');
+});
+
+document.getElementById('btnDismissInstall').addEventListener('click', () => {
+  document.getElementById('installBanner').classList.remove('visible');
+});
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').classList.remove('visible');
+  showToast('App installed! 🎉');
+});
+</script>
+</body>
+</html>
