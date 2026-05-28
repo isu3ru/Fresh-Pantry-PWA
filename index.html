@@ -1,755 +1,788 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#1a1a2e">
-<meta name="description" content="Grocery List PWA - Manage your shopping lists">
+<meta name="theme-color" content="#dbeeff">
+<meta name="description" content="Fresh Pantry – Your smart grocery list planner">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="GroceryList">
-<title>GroceryList</title>
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Fresh Pantry">
+<title>Fresh Pantry</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Lora:wght@400;600;700&display=swap" rel="stylesheet">
 
 <style>
-  :root {
-    --bg: #0f0e17;
-    --surface: #1a1930;
-    --surface2: #232240;
-    --surface3: #2d2b52;
-    --accent: #e8c547;
-    --accent2: #ff6b6b;
-    --accent3: #6bcbff;
-    --text: #fffffe;
-    --text-muted: #a7a9be;
-    --text-dim: #6b6d84;
-    --border: rgba(255,255,255,0.07);
-    --shadow: 0 8px 32px rgba(0,0,0,0.4);
-    --radius: 16px;
-    --radius-sm: 10px;
-    --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* Animated background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(232,197,71,0.07) 0%, transparent 60%),
-      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(107,203,255,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse 40% 40% at 60% 40%, rgba(255,107,107,0.04) 0%, transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-  }
-
-  .app {
-    position: relative;
-    z-index: 1;
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 0 20px 60px;
-  }
-
-  /* HEADER */
-  .header {
-    padding: 40px 0 32px;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 32px;
-  }
-
-  .header-title {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .header-eyebrow {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--accent);
-    opacity: 0.85;
-  }
-
-  .header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(32px, 5vw, 52px);
-    font-weight: 900;
-    line-height: 1;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-
-  .header h1 span {
-    color: var(--accent);
-  }
-
-  .header-meta {
-    font-size: 13px;
-    color: var(--text-muted);
-    padding-bottom: 4px;
-  }
-
-  .header-meta strong {
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  /* NEW LIST BTN */
-  .btn-new-list {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--accent);
-    color: var(--bg);
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 12px 20px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    white-space: nowrap;
-    box-shadow: 0 4px 20px rgba(232,197,71,0.25);
-  }
-
-  .btn-new-list:hover {
-    background: #f0d060;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(232,197,71,0.35);
-  }
-
-  .btn-new-list:active { transform: translateY(0); }
-
-  /* LISTS GRID */
-  .lists-container {
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-
-  @media (max-width: 768px) {
-    .lists-container { grid-template-columns: 1fr; }
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    position: sticky;
-    top: 20px;
-  }
-
-  .sidebar-label {
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 12px;
-    padding-left: 4px;
-  }
-
-  .list-tabs {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .list-tab {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 13px 16px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-    overflow: hidden;
-    gap: 8px;
-  }
-
-  .list-tab::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    opacity: 0;
-    transition: var(--transition);
-  }
-
-  .list-tab:hover {
-    background: var(--surface2);
-    border-color: rgba(255,255,255,0.12);
-  }
-
-  .list-tab.active {
-    background: var(--surface2);
-    border-color: rgba(232,197,71,0.25);
-  }
-
-  .list-tab.active::before { opacity: 1; }
-
-  .list-tab-name {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .list-tab.active .list-tab-name { color: var(--accent); }
-
-  .list-tab-count {
-    font-size: 11px;
-    font-weight: 700;
-    background: var(--surface3);
-    color: var(--text-muted);
-    padding: 2px 8px;
-    border-radius: 20px;
-    flex-shrink: 0;
-  }
-
-  .list-tab.active .list-tab-count {
-    background: rgba(232,197,71,0.15);
-    color: var(--accent);
-  }
-
-  /* DELETE TAB BTN */
-  .btn-delete-list {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    padding: 2px 4px;
-    border-radius: 6px;
-    font-size: 16px;
-    line-height: 1;
-    transition: var(--transition);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-  }
-
-  .btn-delete-list:hover {
-    color: var(--accent2);
-    background: rgba(255,107,107,0.12);
-  }
-
-  /* EMPTY STATE */
-  .empty-state {
-    text-align: center;
-    padding: 48px 24px;
-    background: var(--surface);
-    border: 1px dashed rgba(255,255,255,0.1);
-    border-radius: var(--radius);
-  }
-
-  .empty-icon { font-size: 48px; margin-bottom: 16px; display: block; }
-  .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 22px; margin-bottom: 8px; color: var(--text-muted); }
-  .empty-state p { font-size: 14px; color: var(--text-dim); }
-
-  /* MAIN CONTENT */
-  .main-content {}
-
-  .list-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    animation: slideIn 0.28s cubic-bezier(0.4,0,0.2,1);
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(12px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  .list-card-header {
-    padding: 20px 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border);
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-
-  .list-card-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--text);
-  }
-
-  .list-card-stats {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .stat-pill {
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 20px;
-    background: var(--surface3);
-    color: var(--text-muted);
-  }
-
-  .stat-pill.done {
-    background: rgba(107,203,255,0.12);
-    color: var(--accent3);
-  }
-
-  /* PROGRESS BAR */
-  .progress-bar-wrap {
-    height: 2px;
-    background: var(--surface3);
-  }
-
-  .progress-bar-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent3));
-    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
-  }
-
-  /* ADD ITEM FORM */
-  .add-item-form {
-    padding: 20px 24px;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-  }
-
-  .input-qty {
-    width: 72px;
-    flex-shrink: 0;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 12px;
-    text-align: center;
-    transition: var(--transition);
-    outline: none;
-    -moz-appearance: textfield;
-  }
-
-  .input-qty::-webkit-inner-spin-button,
-  .input-qty::-webkit-outer-spin-button { -webkit-appearance: none; }
-
-  .input-item {
-    flex: 1;
-    min-width: 160px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    padding: 11px 16px;
-    transition: var(--transition);
-    outline: none;
-  }
-
-  .input-qty:focus, .input-item:focus {
-    border-color: rgba(232,197,71,0.4);
-    background: var(--surface3);
-    box-shadow: 0 0 0 3px rgba(232,197,71,0.08);
-  }
-
-  .input-qty::placeholder, .input-item::placeholder { color: var(--text-dim); }
-
-  .btn-add-item {
-    background: var(--surface3);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: var(--radius-sm);
-    color: var(--accent);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    padding: 11px 20px;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-
-  .btn-add-item:hover {
-    background: rgba(232,197,71,0.15);
-    border-color: rgba(232,197,71,0.3);
-    transform: translateY(-1px);
-  }
-
-  .btn-add-item:active { transform: translateY(0); }
-
-  .form-hint {
-    width: 100%;
-    font-size: 11px;
-    color: var(--text-dim);
-    padding: 0 2px;
-  }
-
-  /* ITEMS LIST */
-  .items-list {
-    list-style: none;
-    padding: 8px 0;
-  }
-
-  .item-row {
-    display: flex;
-    align-items: center;
-    padding: 12px 24px;
-    gap: 14px;
-    transition: var(--transition);
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    animation: itemIn 0.2s ease;
-  }
-
-  @keyframes itemIn {
-    from { opacity: 0; transform: translateX(-8px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  .item-row:last-child { border-bottom: none; }
-
-  .item-row:hover { background: rgba(255,255,255,0.025); }
-
-  .item-row.checked { opacity: 0.5; }
-
-  /* Custom checkbox */
-  .item-check {
-    width: 22px; height: 22px;
-    flex-shrink: 0;
-    appearance: none;
-    -webkit-appearance: none;
-    border: 2px solid var(--surface3);
-    border-radius: 6px;
-    background: var(--surface2);
-    cursor: pointer;
-    transition: var(--transition);
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .item-check:hover { border-color: var(--accent); }
-
-  .item-check:checked {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-
-  .item-check:checked::after {
-    content: '✓';
-    position: absolute;
-    font-size: 13px;
-    color: var(--bg);
-    font-weight: 700;
-    line-height: 1;
-  }
-
-  /* Qty badge */
-  .item-qty-badge {
-    font-size: 12px;
-    font-weight: 700;
-    min-width: 32px;
-    height: 24px;
-    background: var(--surface3);
-    color: var(--accent);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-  }
-
-  .item-name {
-    flex: 1;
-    font-size: 15px;
-    font-weight: 400;
-    color: var(--text);
-    transition: var(--transition);
-  }
-
-  .item-row.checked .item-name {
-    text-decoration: line-through;
-    color: var(--text-dim);
-  }
-
-  .btn-delete-item {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    padding: 4px 6px;
-    border-radius: 6px;
-    font-size: 15px;
-    transition: var(--transition);
-    opacity: 0;
-    flex-shrink: 0;
-  }
-
-  .item-row:hover .btn-delete-item { opacity: 1; }
-
-  .btn-delete-item:hover {
-    color: var(--accent2);
-    background: rgba(255,107,107,0.12);
-  }
-
-  /* EMPTY ITEMS */
-  .items-empty {
-    padding: 40px 24px;
-    text-align: center;
-    color: var(--text-dim);
-    font-size: 14px;
-  }
-
-  .items-empty span { font-size: 28px; display: block; margin-bottom: 10px; }
-
-  /* MODAL */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    animation: fadeIn 0.18s ease;
-  }
-
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-  .modal {
-    background: var(--surface2);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: var(--radius);
-    padding: 28px;
-    max-width: 400px;
-    width: 100%;
-    box-shadow: var(--shadow);
-    animation: modalIn 0.22s cubic-bezier(0.4,0,0.2,1);
-  }
-
-  @keyframes modalIn {
-    from { opacity: 0; transform: scale(0.94) translateY(12px); }
-    to   { opacity: 1; transform: scale(1) translateY(0); }
-  }
-
-  .modal h3 {
-    font-family: 'Playfair Display', serif;
-    font-size: 22px;
-    font-weight: 700;
-    margin-bottom: 8px;
-  }
-
-  .modal p {
-    color: var(--text-muted);
-    font-size: 14px;
-    margin-bottom: 24px;
-    line-height: 1.6;
-  }
-
-  .modal p strong { color: var(--text); }
-
-  .modal-input {
-    width: 100%;
-    background: var(--surface3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 15px;
-    padding: 13px 16px;
-    outline: none;
-    transition: var(--transition);
-    margin-bottom: 20px;
-  }
-
-  .modal-input:focus {
-    border-color: rgba(232,197,71,0.4);
-    box-shadow: 0 0 0 3px rgba(232,197,71,0.08);
-  }
-
-  .modal-actions {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-
-  .btn-cancel {
-    background: var(--surface3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 10px 18px;
-    cursor: pointer;
-    transition: var(--transition);
-  }
-
-  .btn-cancel:hover { background: var(--surface); color: var(--text); }
-
-  .btn-confirm {
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--bg);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    padding: 10px 22px;
-    cursor: pointer;
-    transition: var(--transition);
-  }
-
-  .btn-confirm:hover { background: #f0d060; }
-
-  .btn-confirm.danger {
-    background: var(--accent2);
-    box-shadow: 0 4px 16px rgba(255,107,107,0.25);
-  }
-
-  .btn-confirm.danger:hover { background: #ff8585; }
-
-  /* TOAST */
-  .toast-container {
-    position: fixed;
-    bottom: 28px;
-    right: 24px;
-    z-index: 2000;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
-  }
-
-  .toast {
-    background: var(--surface2);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-left: 3px solid var(--accent);
-    border-radius: var(--radius-sm);
-    padding: 12px 18px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--text);
-    box-shadow: var(--shadow);
-    animation: toastIn 0.22s cubic-bezier(0.4,0,0.2,1);
-    max-width: 280px;
-  }
-
-  @keyframes toastIn {
-    from { opacity: 0; transform: translateX(20px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
-
-  .toast.out {
-    animation: toastOut 0.2s ease forwards;
-  }
-
-  @keyframes toastOut {
-    to { opacity: 0; transform: translateX(20px); }
-  }
-
-  .toast.error { border-left-color: var(--accent2); }
-
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
-
-  /* INSTALL BANNER */
-  .install-banner {
-    display: none;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    background: linear-gradient(135deg, rgba(232,197,71,0.12), rgba(107,203,255,0.08));
-    border: 1px solid rgba(232,197,71,0.2);
-    border-radius: var(--radius-sm);
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-
-  .install-banner.visible { display: flex; }
-
-  .install-banner-text { font-size: 13px; color: var(--text-muted); }
-  .install-banner-text strong { color: var(--text); }
-
-  .btn-install {
-    background: var(--accent);
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--bg);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    padding: 7px 16px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-
-  .btn-dismiss-install {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 18px;
-    line-height: 1;
-    flex-shrink: 0;
-  }
-
-  @media (max-width: 540px) {
-    .header { padding: 24px 0 20px; }
-    .add-item-form { padding: 14px 16px; }
-    .item-row { padding: 12px 16px; }
-    .list-card-header { padding: 16px; }
-    .btn-delete-item { opacity: 1; }
-  }
+/* ──────────────────────────────────────────
+   LIGHT THEME (default)  — soft sky blue
+─────────────────────────────────────────── */
+:root,
+[data-theme="light"] {
+  --bg:          #e8f4ff;
+  --bg2:         #dbeeff;
+  --surface:     #ffffff;
+  --surface2:    #f0f8ff;
+  --surface3:    #d6ecff;
+  --accent:      #2b8fff;
+  --accent-dark: #1a6fd4;
+  --accent2:     #ff5f7e;
+  --accent3:     #00c9a0;
+  --accent-pale: #c6e2ff;
+  --text:        #0f2d4a;
+  --text-muted:  #3a6080;
+  --text-dim:    #7aa3c0;
+  --border:      rgba(43,143,255,0.15);
+  --border2:     rgba(43,143,255,0.25);
+  --shadow:      0 6px 28px rgba(30,100,180,0.12);
+  --shadow-card: 0 2px 12px rgba(30,100,180,0.08);
+  --progress-a:  #2b8fff;
+  --progress-b:  #00c9a0;
+  --check-bg:    #2b8fff;
+  --qty-bg:      #c6e2ff;
+  --qty-text:    #1a6fd4;
+  --tag-bg:      #d6ecff;
+  --tag-text:    #2b6cb0;
+  --active-tab:  rgba(43,143,255,0.10);
+  --active-border: rgba(43,143,255,0.45);
+  --tab-hover:   #f0f8ff;
+  --input-bg:    #f5fbff;
+  --hint-color:  #7aa3c0;
+  --empty-border: rgba(43,143,255,0.18);
+  --sidebar-bg:  #f0f8ff;
+  --modal-bg:    #ffffff;
+  --toast-bg:    #ffffff;
+  --toast-border:#2b8fff;
+  --header-line: rgba(43,143,255,0.18);
+  --btn-add-bg:  #e8f4ff;
+  --btn-add-border: rgba(43,143,255,0.3);
+  --install-bg:  linear-gradient(135deg,rgba(43,143,255,0.08),rgba(0,201,160,0.06));
+  --install-border: rgba(43,143,255,0.22);
+  --eyebrow:     #2b8fff;
+  --logo-dot:    #ff5f7e;
+  --theme-icon-show: '☀️';
+}
+
+/* ──────────────────────────────────────────
+   DARK THEME
+─────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:          #0d1b2a;
+  --bg2:         #0a1520;
+  --surface:     #132338;
+  --surface2:    #1a2f46;
+  --surface3:    #223a56;
+  --accent:      #5ab4ff;
+  --accent-dark: #3d9bff;
+  --accent2:     #ff6b8a;
+  --accent3:     #00dba8;
+  --accent-pale: #1a3a58;
+  --text:        #e8f4ff;
+  --text-muted:  #8bbfd8;
+  --text-dim:    #4d7a9a;
+  --border:      rgba(90,180,255,0.10);
+  --border2:     rgba(90,180,255,0.20);
+  --shadow:      0 8px 32px rgba(0,0,0,0.4);
+  --shadow-card: 0 2px 16px rgba(0,0,0,0.3);
+  --progress-a:  #5ab4ff;
+  --progress-b:  #00dba8;
+  --check-bg:    #5ab4ff;
+  --qty-bg:      #1a3a58;
+  --qty-text:    #5ab4ff;
+  --tag-bg:      #1a3a58;
+  --tag-text:    #5ab4ff;
+  --active-tab:  rgba(90,180,255,0.12);
+  --active-border: rgba(90,180,255,0.40);
+  --tab-hover:   #1a2f46;
+  --input-bg:    #1a2f46;
+  --hint-color:  #4d7a9a;
+  --empty-border: rgba(90,180,255,0.12);
+  --sidebar-bg:  #0f1e2e;
+  --modal-bg:    #1a2f46;
+  --toast-bg:    #1a2f46;
+  --toast-border:#5ab4ff;
+  --header-line: rgba(90,180,255,0.14);
+  --btn-add-bg:  #1a3a58;
+  --btn-add-border: rgba(90,180,255,0.25);
+  --install-bg:  linear-gradient(135deg,rgba(90,180,255,0.10),rgba(0,219,168,0.07));
+  --install-border: rgba(90,180,255,0.2);
+  --eyebrow:     #5ab4ff;
+  --logo-dot:    #ff6b8a;
+}
+
+/* ──────────────────────────────────────────
+   BASE
+─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Nunito', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 16px;
+  line-height: 1.5;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 55% 45% at 15% 15%, rgba(43,143,255,0.09) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 55% at 85% 85%, rgba(0,201,160,0.07) 0%, transparent 65%),
+    radial-gradient(ellipse 35% 35% at 65% 30%, rgba(255,95,126,0.04) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+  transition: opacity 0.3s;
+}
+
+.app {
+  position: relative; z-index: 1;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 22px 72px;
+}
+
+/* ──────────────────────────────────────────
+   HEADER
+─────────────────────────────────────────── */
+.header {
+  padding: 36px 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1.5px solid var(--header-line);
+  margin-bottom: 32px;
+}
+
+.header-left { display: flex; flex-direction: column; gap: 3px; }
+
+.header-eyebrow {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--eyebrow);
+}
+
+.header-logo {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+}
+
+.header h1 {
+  font-family: 'Lora', serif;
+  font-size: clamp(30px, 4.5vw, 50px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.header h1 .logo-fresh { color: var(--accent); }
+.header h1 .logo-dot   { color: var(--logo-dot); }
+.header h1 .logo-pantry{ color: var(--text); }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.header-meta {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.header-meta strong { color: var(--accent); }
+
+/* THEME TOGGLE */
+.btn-theme {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface);
+  border: 1.5px solid var(--border2);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  transition: all 0.22s ease;
+  box-shadow: var(--shadow-card);
+  flex-shrink: 0;
+}
+
+.btn-theme:hover {
+  transform: rotate(20deg) scale(1.08);
+  border-color: var(--accent);
+}
+
+/* NEW LIST BTN */
+.btn-new-list {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 13px 22px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 18px rgba(43,143,255,0.3);
+  letter-spacing: 0.01em;
+}
+
+.btn-new-list:hover {
+  background: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 26px rgba(43,143,255,0.4);
+}
+.btn-new-list:active { transform: translateY(0); }
+
+/* ──────────────────────────────────────────
+   INSTALL BANNER
+─────────────────────────────────────────── */
+.install-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--install-bg);
+  border: 1px solid var(--install-border);
+  border-radius: 12px;
+  padding: 13px 18px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.install-banner.visible { display: flex; }
+.install-banner-text { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+.install-banner-text strong { color: var(--text); }
+.btn-install {
+  background: var(--accent);
+  border: none; border-radius: 10px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px; font-weight: 800;
+  padding: 8px 18px; cursor: pointer;
+  box-shadow: 0 3px 12px rgba(43,143,255,0.25);
+}
+.btn-dismiss-install {
+  background: none; border: none;
+  color: var(--text-dim); cursor: pointer;
+  font-size: 20px; line-height: 1;
+}
+
+/* ──────────────────────────────────────────
+   LAYOUT GRID
+─────────────────────────────────────────── */
+.lists-container {
+  display: grid;
+  grid-template-columns: 290px 1fr;
+  gap: 26px;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  .lists-container { grid-template-columns: 1fr; }
+}
+
+/* ──────────────────────────────────────────
+   SIDEBAR
+─────────────────────────────────────────── */
+.sidebar {
+  position: sticky;
+  top: 20px;
+  background: var(--sidebar-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 14px;
+  box-shadow: var(--shadow-card);
+  transition: background 0.3s;
+}
+
+.sidebar-label {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  padding-left: 6px;
+}
+
+.list-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.list-tab {
+  display: flex;
+  align-items: center;
+  padding: 13px 14px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.list-tab::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--accent);
+  opacity: 0;
+  border-radius: 0 3px 3px 0;
+  transition: opacity 0.2s;
+}
+
+.list-tab:hover { background: var(--tab-hover); border-color: var(--border2); }
+
+.list-tab.active {
+  background: var(--active-tab);
+  border-color: var(--active-border);
+}
+.list-tab.active::before { opacity: 1; }
+
+.list-tab-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-tab.active .list-tab-name { color: var(--accent); }
+
+.list-tab-count {
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  padding: 3px 9px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.list-tab.active .list-tab-count {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-delete-list {
+  background: none; border: none;
+  color: var(--text-dim);
+  cursor: pointer; padding: 3px 5px;
+  border-radius: 7px; line-height: 1;
+  transition: all 0.18s; flex-shrink: 0;
+  display: flex; align-items: center;
+  opacity: 0.5;
+}
+.list-tab:hover .btn-delete-list { opacity: 1; }
+.btn-delete-list:hover {
+  color: var(--accent2);
+  background: rgba(255,95,126,0.12);
+}
+
+/* ──────────────────────────────────────────
+   EMPTY STATE
+─────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 54px 28px;
+  background: var(--surface);
+  border: 2px dashed var(--empty-border);
+  border-radius: 20px;
+}
+.empty-icon { font-size: 52px; margin-bottom: 16px; display: block; }
+.empty-state h3 {
+  font-family: 'Lora', serif;
+  font-size: 24px; font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+.empty-state p { font-size: 16px; color: var(--text-dim); font-weight: 600; }
+
+/* ──────────────────────────────────────────
+   LIST CARD
+─────────────────────────────────────────── */
+.main-content {}
+
+.list-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  animation: slideIn 0.26s cubic-bezier(0.4,0,0.2,1);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.list-card-header {
+  padding: 22px 26px 18px;
+  display: flex; align-items: center;
+  justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface2);
+}
+
+.list-card-title {
+  font-family: 'Lora', serif;
+  font-size: 26px; font-weight: 700;
+  color: var(--text);
+}
+
+.list-card-stats { display: flex; align-items: center; gap: 10px; }
+
+.stat-pill {
+  font-size: 13px; font-weight: 800;
+  padding: 5px 14px;
+  border-radius: 20px;
+  background: var(--tag-bg);
+  color: var(--tag-text);
+  letter-spacing: 0.01em;
+}
+.stat-pill.done {
+  background: rgba(0,201,160,0.15);
+  color: var(--accent3);
+}
+
+/* PROGRESS BAR */
+.progress-bar-wrap { height: 4px; background: var(--surface3); }
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--progress-a), var(--progress-b));
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+  border-radius: 0 2px 2px 0;
+}
+
+/* ──────────────────────────────────────────
+   ADD ITEM FORM
+─────────────────────────────────────────── */
+.add-item-form {
+  padding: 20px 26px;
+  display: flex; gap: 10px; flex-wrap: wrap;
+  border-bottom: 1.5px solid var(--border);
+  background: var(--surface2);
+}
+
+.input-qty {
+  width: 80px; flex-shrink: 0;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 11px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px; font-weight: 700;
+  padding: 12px 12px;
+  text-align: center;
+  transition: all 0.2s; outline: none;
+  -moz-appearance: textfield;
+}
+.input-qty::-webkit-inner-spin-button,
+.input-qty::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.input-item {
+  flex: 1; min-width: 180px;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 11px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px; font-weight: 600;
+  padding: 12px 16px;
+  transition: all 0.2s; outline: none;
+}
+
+.input-qty:focus, .input-item:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3.5px rgba(43,143,255,0.13);
+}
+
+.input-qty::placeholder, .input-item::placeholder {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.btn-add-item {
+  background: var(--accent);
+  border: none; border-radius: 11px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px; font-weight: 800;
+  padding: 12px 22px; cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; gap: 7px;
+  white-space: nowrap;
+  box-shadow: 0 3px 14px rgba(43,143,255,0.28);
+}
+.btn-add-item:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(43,143,255,0.38);
+}
+.btn-add-item:active { transform: translateY(0); }
+
+.form-hint {
+  width: 100%;
+  font-size: 13px; font-weight: 600;
+  color: var(--hint-color);
+  padding: 0 3px;
+}
+
+/* ──────────────────────────────────────────
+   ITEMS LIST
+─────────────────────────────────────────── */
+.items-list { list-style: none; padding: 6px 0; }
+
+.item-row {
+  display: flex; align-items: center;
+  padding: 13px 26px; gap: 14px;
+  transition: background 0.18s;
+  border-bottom: 1px solid var(--border);
+  animation: itemIn 0.2s ease;
+}
+@keyframes itemIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.item-row:last-child { border-bottom: none; }
+.item-row:hover { background: var(--surface2); }
+.item-row.checked { opacity: 0.55; }
+
+/* Custom checkbox */
+.item-check {
+  width: 24px; height: 24px;
+  flex-shrink: 0;
+  appearance: none; -webkit-appearance: none;
+  border: 2.5px solid var(--border2);
+  border-radius: 7px;
+  background: var(--input-bg);
+  cursor: pointer; transition: all 0.18s;
+  position: relative; display: flex;
+  align-items: center; justify-content: center;
+}
+.item-check:hover { border-color: var(--accent); background: var(--accent-pale); }
+.item-check:checked {
+  background: var(--check-bg);
+  border-color: var(--check-bg);
+}
+.item-check:checked::after {
+  content: '✓';
+  position: absolute;
+  font-size: 15px; font-weight: 900;
+  color: #fff; line-height: 1;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Qty badge */
+.item-qty-badge {
+  font-size: 13px; font-weight: 900;
+  min-width: 36px; height: 26px;
+  background: var(--qty-bg);
+  color: var(--qty-text);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.item-name {
+  flex: 1;
+  font-size: 17px; font-weight: 600;
+  color: var(--text);
+  transition: all 0.18s;
+}
+.item-row.checked .item-name {
+  text-decoration: line-through;
+  color: var(--text-dim);
+}
+
+.btn-delete-item {
+  background: none; border: none;
+  color: var(--text-dim); cursor: pointer;
+  padding: 5px 7px; border-radius: 8px;
+  font-size: 15px; transition: all 0.18s;
+  opacity: 0; flex-shrink: 0;
+  display: flex; align-items: center;
+}
+.item-row:hover .btn-delete-item { opacity: 1; }
+.btn-delete-item:hover {
+  color: var(--accent2);
+  background: rgba(255,95,126,0.12);
+}
+
+/* EMPTY ITEMS */
+.items-empty {
+  padding: 44px 26px; text-align: center;
+  color: var(--text-dim); font-size: 16px; font-weight: 600;
+}
+.items-empty span { font-size: 36px; display: block; margin-bottom: 10px; }
+
+/* ──────────────────────────────────────────
+   MODAL
+─────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(10,30,50,0.5);
+  backdrop-filter: blur(7px);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.18s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--modal-bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 420px; width: 100%;
+  box-shadow: var(--shadow);
+  animation: modalIn 0.22s cubic-bezier(0.4,0,0.2,1);
+  transition: background 0.3s;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.93) translateY(14px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal h3 {
+  font-family: 'Lora', serif;
+  font-size: 24px; font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.modal p {
+  color: var(--text-muted); font-size: 16px; font-weight: 600;
+  margin-bottom: 24px; line-height: 1.6;
+}
+.modal p strong { color: var(--text); }
+
+.modal-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1.5px solid var(--border2);
+  border-radius: 12px;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 17px; font-weight: 600;
+  padding: 14px 16px; outline: none;
+  transition: all 0.2s;
+  margin-bottom: 22px;
+}
+.modal-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3.5px rgba(43,143,255,0.13);
+}
+.modal-input::placeholder { color: var(--text-dim); font-weight: 600; }
+
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+.btn-cancel {
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  color: var(--text-muted);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px; font-weight: 700;
+  padding: 11px 20px; cursor: pointer;
+  transition: all 0.18s;
+}
+.btn-cancel:hover { background: var(--surface3); color: var(--text); }
+
+.btn-confirm {
+  background: var(--accent);
+  border: none; border-radius: 11px;
+  color: #fff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px; font-weight: 800;
+  padding: 11px 24px; cursor: pointer;
+  transition: all 0.18s;
+  box-shadow: 0 3px 14px rgba(43,143,255,0.28);
+}
+.btn-confirm:hover { background: var(--accent-dark); }
+.btn-confirm.danger {
+  background: var(--accent2);
+  box-shadow: 0 3px 14px rgba(255,95,126,0.28);
+}
+.btn-confirm.danger:hover { background: #e0405f; }
+
+/* ──────────────────────────────────────────
+   TOAST
+─────────────────────────────────────────── */
+.toast-container {
+  position: fixed; bottom: 28px; right: 24px;
+  z-index: 2000;
+  display: flex; flex-direction: column;
+  gap: 8px; align-items: flex-end;
+}
+.toast {
+  background: var(--toast-bg);
+  border: 1.5px solid var(--border2);
+  border-left: 4px solid var(--toast-border);
+  border-radius: 12px;
+  padding: 13px 20px;
+  font-size: 15px; font-weight: 700;
+  color: var(--text);
+  box-shadow: var(--shadow);
+  animation: toastIn 0.22s cubic-bezier(0.4,0,0.2,1);
+  max-width: 300px;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(22px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.toast.out { animation: toastOut 0.2s ease forwards; }
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(22px); }
+}
+.toast.error { border-left-color: var(--accent2); }
+
+/* ──────────────────────────────────────────
+   SCROLLBAR
+─────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
+
+/* ──────────────────────────────────────────
+   RESPONSIVE
+─────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .header { padding: 22px 0 18px; }
+  .add-item-form { padding: 16px; }
+  .item-row { padding: 12px 16px; }
+  .list-card-header { padding: 16px 18px; }
+  .btn-delete-item { opacity: 1; }
+  .header h1 { font-size: 28px; }
+}
 </style>
 </head>
 <body>
@@ -757,43 +790,64 @@
 <div class="app">
   <!-- Install Banner -->
   <div class="install-banner" id="installBanner">
-    <span class="install-banner-text"><strong>Add to Home Screen</strong> — use GroceryList offline</span>
-    <button class="btn-install" id="btnInstall">Install</button>
+    <span class="install-banner-text"><strong>Install Fresh Pantry</strong> — use it offline, anytime</span>
+    <button class="btn-install" id="btnInstall">Install App</button>
     <button class="btn-dismiss-install" id="btnDismissInstall" title="Dismiss">×</button>
   </div>
 
   <!-- Header -->
   <header class="header">
-    <div class="header-title">
-      <span class="header-eyebrow">Your Pantry Planner</span>
-      <h1>Grocery<span>.</span></h1>
+    <div class="header-left">
+      <span class="header-eyebrow">🌿 Your Smart Pantry Planner</span>
+      <div class="header-logo">
+        <h1>
+          <span class="logo-fresh">Fresh</span><span class="logo-dot"> </span><span class="logo-pantry">Pantry</span>
+        </h1>
+      </div>
     </div>
-    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
+    <div class="header-right">
       <span class="header-meta" id="listCountMeta">0 lists</span>
+      <button class="btn-theme" id="btnTheme" title="Toggle theme" aria-label="Toggle dark/light mode">☀️</button>
       <button class="btn-new-list" id="btnNewList">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
         New List
       </button>
     </div>
   </header>
 
   <!-- Main -->
-  <div class="lists-container" id="listsContainer">
-    <!-- Populated by JS -->
-  </div>
+  <div class="lists-container" id="listsContainer"></div>
 </div>
 
 <!-- Toast container -->
 <div class="toast-container" id="toastContainer"></div>
-
-<!-- Modals populated by JS -->
+<!-- Modal container -->
 <div id="modalContainer"></div>
 
 <script>
 // ─────────────────────────────────────────
+//  THEME
+// ─────────────────────────────────────────
+(function() {
+  const saved = localStorage.getItem('fp_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.getElementById('btnTheme').textContent = saved === 'dark' ? '☀️' : '🌙';
+})();
+
+document.getElementById('btnTheme').addEventListener('click', () => {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('fp_theme', next);
+  document.getElementById('btnTheme').textContent = next === 'dark' ? '☀️' : '🌙';
+  // Update theme-color meta
+  document.querySelector('meta[name="theme-color"]').setAttribute('content', next === 'dark' ? '#0d1b2a' : '#dbeeff');
+});
+
+// ─────────────────────────────────────────
 //  STATE & STORAGE
 // ─────────────────────────────────────────
-const STORAGE_KEY = 'grocery_lists_v2';
+const STORAGE_KEY = 'fresh_pantry_v1';
 
 function loadState() {
   try {
@@ -823,16 +877,17 @@ function showModal({ title, message, inputPlaceholder, confirmText, confirmClass
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay';
   overlay.innerHTML = `
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true">
       <h3>${title}</h3>
       ${message ? `<p>${message}</p>` : ''}
-      ${inputPlaceholder !== undefined ? `<input class="modal-input" id="modalInput" type="text" placeholder="${inputPlaceholder}" maxlength="60" autocomplete="off">` : ''}
+      ${inputPlaceholder !== undefined
+        ? `<input class="modal-input" id="modalInput" type="text" placeholder="${inputPlaceholder}" maxlength="60" autocomplete="off">`
+        : ''}
       <div class="modal-actions">
         <button class="btn-cancel" id="modalCancel">Cancel</button>
         <button class="btn-confirm ${confirmClass}" id="modalConfirm">${confirmText}</button>
       </div>
-    </div>
-  `;
+    </div>`;
   document.getElementById('modalContainer').appendChild(overlay);
 
   const input = overlay.querySelector('#modalInput');
@@ -855,10 +910,7 @@ function showModal({ title, message, inputPlaceholder, confirmText, confirmClass
     close();
     onConfirm(val);
   });
-
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) { close(); onCancel?.(); }
-  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) { close(); onCancel?.(); } });
 }
 
 // ─────────────────────────────────────────
@@ -885,25 +937,24 @@ function createList(name) {
   state.activeListId = list.id;
   saveState(state);
   render();
-  showToast(`"${name}" created`);
+  showToast(`✅ "${name}" created`);
 }
 
 function deleteList(listId) {
   const list = state.lists.find(l => l.id === listId);
   if (!list) return;
   showModal({
-    title: 'Delete List',
-    message: `Remove <strong>"${list.name}"</strong> and all its items? This cannot be undone.`,
+    title: 'Delete List?',
+    message: `Remove <strong>"${escHtml(list.name)}"</strong> and all its items permanently?`,
     confirmText: 'Delete',
     confirmClass: 'danger',
     onConfirm: () => {
       state.lists = state.lists.filter(l => l.id !== listId);
-      if (state.activeListId === listId) {
+      if (state.activeListId === listId)
         state.activeListId = state.lists.length ? state.lists[state.lists.length - 1].id : null;
-      }
       saveState(state);
       render();
-      showToast('List deleted', 'error');
+      showToast('🗑️ List deleted', 'error');
     }
   });
 }
@@ -923,8 +974,8 @@ function deleteItem(listId, itemId) {
   const item = list.items.find(i => i.id === itemId);
   if (!item) return;
   showModal({
-    title: 'Remove Item',
-    message: `Remove <strong>${item.qty}× ${item.name}</strong> from the list?`,
+    title: 'Remove Item?',
+    message: `Remove <strong>${item.qty}× ${escHtml(item.name)}</strong> from the list?`,
     confirmText: 'Remove',
     confirmClass: 'danger',
     onConfirm: () => {
@@ -932,7 +983,7 @@ function deleteItem(listId, itemId) {
       saveState(state);
       renderMain();
       renderSidebar();
-      showToast('Item removed', 'error');
+      showToast('🗑️ Item removed', 'error');
     }
   });
 }
@@ -954,29 +1005,29 @@ function toggleItem(listId, itemId) {
 function render() {
   const container = document.getElementById('listsContainer');
 
+  document.getElementById('listCountMeta').innerHTML =
+    state.lists.length === 0
+      ? '0 lists'
+      : `<strong>${state.lists.length}</strong> list${state.lists.length !== 1 ? 's' : ''}`;
+
   if (state.lists.length === 0) {
     container.innerHTML = `
       <div style="grid-column:1/-1">
         <div class="empty-state">
           <span class="empty-icon">🛒</span>
           <h3>No lists yet</h3>
-          <p>Click "New List" to start planning your groceries.</p>
+          <p>Tap <strong>New List</strong> to start planning your groceries.</p>
         </div>
       </div>`;
-    document.getElementById('listCountMeta').textContent = '0 lists';
     return;
   }
 
   container.innerHTML = `
     <aside class="sidebar">
-      <div class="sidebar-label">Your Lists</div>
+      <div class="sidebar-label">My Lists</div>
       <div class="list-tabs" id="listTabs"></div>
     </aside>
-    <main class="main-content" id="mainContent"></main>
-  `;
-
-  document.getElementById('listCountMeta').textContent =
-    `${state.lists.length} list${state.lists.length !== 1 ? 's' : ''}`;
+    <main class="main-content" id="mainContent"></main>`;
 
   renderSidebar();
   renderMain();
@@ -991,32 +1042,31 @@ function renderSidebar() {
     const done = list.items.filter(i => i.checked).length;
     const active = list.id === state.activeListId;
     return `
-      <div class="list-tab${active ? ' active' : ''}" data-id="${list.id}">
+      <div class="list-tab${active ? ' active' : ''}" data-id="${list.id}" role="button" tabindex="0">
         <span class="list-tab-name">${escHtml(list.name)}</span>
         <span class="list-tab-count">${done}/${total}</span>
-        <button class="btn-delete-list" data-del="${list.id}" title="Delete list">
+        <button class="btn-delete-list" data-del="${list.id}" title="Delete list" aria-label="Delete ${escHtml(list.name)}">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
         </button>
       </div>`;
   }).join('');
 
   tabs.querySelectorAll('.list-tab').forEach(tab => {
-    tab.addEventListener('click', e => {
+    const activate = e => {
       if (e.target.closest('.btn-delete-list')) return;
       state.activeListId = tab.dataset.id;
       saveState(state);
       renderSidebar();
       renderMain();
-    });
+    };
+    tab.addEventListener('click', activate);
+    tab.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') activate(e); });
   });
 
   tabs.querySelectorAll('.btn-delete-list').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      deleteList(btn.dataset.del);
-    });
+    btn.addEventListener('click', e => { e.stopPropagation(); deleteList(btn.dataset.del); });
   });
 }
 
@@ -1026,13 +1076,13 @@ function renderMain() {
   const list = getActiveList();
 
   if (!list) {
-    main.innerHTML = `<div class="empty-state"><span class="empty-icon">👈</span><h3>Select a list</h3><p>Choose a list from the sidebar.</p></div>`;
+    main.innerHTML = `<div class="empty-state"><span class="empty-icon">👈</span><h3>Pick a list</h3><p>Choose one from the sidebar to get started.</p></div>`;
     return;
   }
 
   const total = list.items.length;
-  const done = list.items.filter(i => i.checked).length;
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const done  = list.items.filter(i => i.checked).length;
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
 
   main.innerHTML = `
     <div class="list-card">
@@ -1040,58 +1090,61 @@ function renderMain() {
         <span class="list-card-title">${escHtml(list.name)}</span>
         <div class="list-card-stats">
           <span class="stat-pill">${total} item${total !== 1 ? 's' : ''}</span>
-          ${done > 0 ? `<span class="stat-pill done">${done} done</span>` : ''}
+          ${done > 0 ? `<span class="stat-pill done">✓ ${done} done</span>` : ''}
+          ${pct === 100 && total > 0 ? `<span class="stat-pill done">🎉 All done!</span>` : ''}
         </div>
       </div>
       <div class="progress-bar-wrap">
         <div class="progress-bar-fill" style="width:${pct}%"></div>
       </div>
       <div class="add-item-form" id="addItemForm">
-        <input class="input-qty" id="inputQty" type="number" min="1" max="999" placeholder="Qty" value="">
-        <input class="input-item" id="inputItem" type="text" placeholder="Add an item… e.g. Milk, Eggs" maxlength="80" autocomplete="off">
+        <input class="input-qty" id="inputQty" type="number" min="1" max="999" placeholder="Qty">
+        <input class="input-item" id="inputItem" type="text" placeholder="Item name — e.g. Oat Milk, Avocado" maxlength="80" autocomplete="off">
         <button class="btn-add-item" id="btnAddItem">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Add
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          Add Item
         </button>
-        <span class="form-hint">Leave Qty blank to default to 1</span>
+        <span class="form-hint">💡 Leave Qty blank — it will default to 1</span>
       </div>
       ${total === 0
-        ? `<div class="items-empty"><span>🥕</span>No items yet — add some above!</div>`
-        : `<ul class="items-list" id="itemsList">
+        ? `<div class="items-empty"><span>🥕</span>No items yet — add your first one above!</div>`
+        : `<ul class="items-list" id="itemsList" role="list">
             ${list.items.map(item => `
               <li class="item-row${item.checked ? ' checked' : ''}" data-item-id="${item.id}">
-                <input type="checkbox" class="item-check" ${item.checked ? 'checked' : ''} title="Toggle">
+                <input type="checkbox" class="item-check" ${item.checked ? 'checked' : ''} title="Toggle done" aria-label="${escHtml(item.name)}">
                 <span class="item-qty-badge">${item.qty}×</span>
                 <span class="item-name">${escHtml(item.name)}</span>
-                <button class="btn-delete-item" title="Remove item">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                <button class="btn-delete-item" title="Remove item" aria-label="Remove ${escHtml(item.name)}">
+                  <svg width="15" height="15" viewBox="0 0 14 14" fill="none">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
                 </button>
               </li>`).join('')}
-          </ul>`
-      }
+          </ul>`}
     </div>`;
 
-  // Attach add-item listeners
-  const btnAdd = document.getElementById('btnAddItem');
+  const btnAdd   = document.getElementById('btnAddItem');
   const inputItem = document.getElementById('inputItem');
-  const inputQty = document.getElementById('inputQty');
+  const inputQty  = document.getElementById('inputQty');
 
   const doAdd = () => {
     const name = inputItem.value.trim();
-    if (!name) { inputItem.focus(); inputItem.style.borderColor = 'rgba(255,107,107,0.5)'; setTimeout(() => inputItem.style.borderColor = '', 700); return; }
+    if (!name) {
+      inputItem.style.borderColor = 'var(--accent2)';
+      inputItem.focus();
+      setTimeout(() => inputItem.style.borderColor = '', 800);
+      return;
+    }
     const qty = parseInt(inputQty.value) || 1;
     addItem(list.id, name, qty);
     inputItem.value = '';
-    inputQty.value = '';
+    inputQty.value  = '';
     inputItem.focus();
   };
 
   btnAdd.addEventListener('click', doAdd);
   inputItem.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
 
-  // Item row listeners
   const itemsList = document.getElementById('itemsList');
   if (itemsList) {
     itemsList.querySelectorAll('.item-check').forEach(cb => {
@@ -1100,7 +1153,6 @@ function renderMain() {
         toggleItem(list.id, row.dataset.itemId);
       });
     });
-
     itemsList.querySelectorAll('.btn-delete-item').forEach(btn => {
       btn.addEventListener('click', () => {
         const row = btn.closest('.item-row');
@@ -1111,7 +1163,8 @@ function renderMain() {
 }
 
 function escHtml(str) {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─────────────────────────────────────────
@@ -1119,9 +1172,9 @@ function escHtml(str) {
 // ─────────────────────────────────────────
 document.getElementById('btnNewList').addEventListener('click', () => {
   showModal({
-    title: 'New Grocery List',
-    inputPlaceholder: 'e.g. Weekly Shop, Party, Farmers Market',
-    confirmText: 'Create',
+    title: '🛒 New Grocery List',
+    inputPlaceholder: 'e.g. Weekly Shop, Party Night, Farmers Market…',
+    confirmText: 'Create List',
     onConfirm: name => {
       if (!name) { showToast('Please enter a list name', 'error'); return; }
       createList(name);
@@ -1132,67 +1185,34 @@ document.getElementById('btnNewList').addEventListener('click', () => {
 render();
 
 // ─────────────────────────────────────────
-//  PWA — Service Worker (inline blob)
+//  PWA — Service Worker
 // ─────────────────────────────────────────
 if ('serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'grocery-v1';
-const ASSETS = [self.location.href];
-
-self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match(e.request)))
-  );
-});
-  `;
-
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swUrl = URL.createObjectURL(blob);
-
-  navigator.serviceWorker.register(swUrl, { scope: './' }).catch(() => {});
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 // ─────────────────────────────────────────
-//  PWA — Install prompt
+//  PWA — Install Prompt
 // ─────────────────────────────────────────
 let deferredPrompt = null;
-
 window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
+  e.preventDefault(); deferredPrompt = e;
   document.getElementById('installBanner').classList.add('visible');
 });
-
 document.getElementById('btnInstall').addEventListener('click', async () => {
   if (!deferredPrompt) return;
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
   deferredPrompt = null;
   document.getElementById('installBanner').classList.remove('visible');
-  if (outcome === 'accepted') showToast('App installed! 🎉');
+  if (outcome === 'accepted') showToast('🎉 App installed!');
 });
-
 document.getElementById('btnDismissInstall').addEventListener('click', () => {
   document.getElementById('installBanner').classList.remove('visible');
 });
-
 window.addEventListener('appinstalled', () => {
   document.getElementById('installBanner').classList.remove('visible');
-  showToast('App installed! 🎉');
+  showToast('🎉 Fresh Pantry installed!');
 });
 </script>
 </body>
