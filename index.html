@@ -1264,15 +1264,7 @@ function genUuid() {
 
 async function checkOnline() {
   if (!navigator.onLine) throw new Error('No internet connection');
-  const resp = await fetch(`${SUPABASE_URL}/rest/v1/`, {
-    method: 'HEAD',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-    }
-  });
-  if (!resp.ok && resp.status !== 404)
-    throw new Error('Cannot reach server');
+  // Actual Supabase API calls will surface any auth/network errors
 }
 
 async function supabaseInsert(uuid, payload) {
