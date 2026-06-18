@@ -802,6 +802,23 @@ body::before {
 ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
 
 /* ──────────────────────────────────────────
+   QR / SCANNER / SPINNER
+─────────────────────────────────────────── */
+.spinner {
+  width: 36px; height: 36px;
+  border: 4px solid var(--surface3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#qrcode img { margin: 0 auto; display: block; }
+#qrcode canvas { margin: 0 auto; display: block; }
+
+#scannerContainer video { border-radius: 12px; }
+
+/* ──────────────────────────────────────────
    RESPONSIVE
 ─────────────────────────────────────────── */
 @media (max-width: 560px) {
@@ -813,6 +830,10 @@ body::before {
   .header h1 { font-size: 28px; }
 }
 </style>
+
+<!-- QR Code libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
 </head>
 <body>
 
@@ -836,11 +857,11 @@ body::before {
     </div>
     <div class="header-right">
       <span class="header-meta" id="listCountMeta">0 lists</span>
-      <button class="btn-export" id="btnExport" title="Export current list" aria-label="Export list" disabled>
+      <button class="btn-export" id="btnExport" title="Export all lists via QR code" aria-label="Export all lists via QR code">
         <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
         Export
       </button>
-      <button class="btn-import" id="btnImport" title="Import list" aria-label="Import list">
+      <button class="btn-import" id="btnImport" title="Import lists via QR code scan" aria-label="Import lists via QR code scan">
         <svg width="17" height="17" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
         Import
       </button>
@@ -1208,90 +1229,276 @@ function escHtml(str) {
 }
 
 // ─────────────────────────────────────────
-//  EXPORT / IMPORT
+//  EXPORT / IMPORT (Supabase + QR)
 // ─────────────────────────────────────────
+const SUPABASE_URL = 'https://qexmohitsmaltiobqola.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_RLTnR1PsuwwYhvsbykY23Q_10vBS3IV';
+
+/*
+-- Supabase setup SQL (run in SQL Editor):
+CREATE TABLE list_shares (
+  id TEXT PRIMARY KEY,
+  list_data JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  expires_at TIMESTAMPTZ NOT NULL
+);
+ALTER TABLE list_shares ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "anon_insert" ON list_shares FOR INSERT TO anon WITH CHECK (true);
+CREATE POLICY "anon_select" ON list_shares FOR SELECT TO anon USING (true);
+CREATE POLICY "anon_delete" ON list_shares FOR DELETE TO anon USING (true);
+*/
+
 function updateExportButton() {
   const btn = document.getElementById('btnExport');
-  if (btn) {
-    const hasActiveList = getActiveList() !== null;
-    btn.disabled = !hasActiveList;
+  if (btn) btn.disabled = state.lists.length === 0;
+}
+
+function genUuid() {
+  if (crypto.randomUUID && typeof crypto.randomUUID === 'function')
+    return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+async function checkOnline() {
+  if (!navigator.onLine) throw new Error('No internet connection');
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/`, {
+    method: 'HEAD',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+    }
+  });
+  if (!resp.ok && resp.status !== 404)
+    throw new Error('Cannot reach server');
+}
+
+async function supabaseInsert(uuid, payload) {
+  const resp = await fetch(`${SUPABASE_URL}/rest/v1/list_shares`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Prefer': 'return=minimal'
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Upload failed (${resp.status})${text ? ': ' + text : ''}`);
   }
 }
 
-function exportList() {
-  const list = getActiveList();
-  if (!list) return;
-  
-  const exportData = {
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    list: {
-      name: list.name,
-      items: list.items.map(item => ({
-        name: item.name,
-        qty: item.qty,
-        checked: item.checked
-      }))
-    }
-  };
-  
-  const json = JSON.stringify(exportData, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${list.name.replace(/[^a-z0-9]/gi, '_')}_list.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('📤 List exported!');
+async function supabaseSelect(uuid) {
+  const resp = await fetch(
+    `${SUPABASE_URL}/rest/v1/list_shares?id=eq.${encodeURIComponent(uuid)}`,
+    { headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` } }
+  );
+  if (!resp.ok) throw new Error(`Fetch failed (${resp.status})`);
+  const rows = await resp.json();
+  if (!rows || rows.length === 0) throw new Error('QR code not found or expired');
+  return rows[0];
 }
 
-function importList(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (!data.version || !data.list || !data.list.name || !Array.isArray(data.list.items)) {
-        throw new Error('Invalid format');
+async function supabaseDelete(uuid) {
+  const resp = await fetch(
+    `${SUPABASE_URL}/rest/v1/list_shares?id=eq.${encodeURIComponent(uuid)}`,
+    {
+      method: 'DELETE',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Prefer': 'return=minimal'
       }
-      
-      const newList = {
-        id: uid(),
-        name: data.list.name,
-        items: data.list.items.map(item => ({
+    }
+  );
+  if (!resp.ok) throw new Error(`Delete failed (${resp.status})`);
+}
+
+// ─────────────────────────────────────────
+//  EXPORT — upload all lists & show QR
+// ─────────────────────────────────────────
+async function exportList() {
+  if (state.lists.length === 0) {
+    showToast('❌ No lists to export', 'error');
+    return;
+  }
+
+  try { await checkOnline(); }
+  catch (e) { showToast('❌ ' + e.message, 'error'); return; }
+
+  const uuid = genUuid();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal" style="text-align:center;">
+      <h3>📤 Exporting Lists</h3>
+      <div class="spinner" style="margin:20px auto;"></div>
+      <p style="color:var(--text-muted);">Uploading your lists to the cloud…</p>
+    </div>`;
+  document.getElementById('modalContainer').appendChild(overlay);
+
+  const payload = {
+    id: uuid,
+    list_data: { lists: state.lists, activeListId: state.activeListId },
+    created_at: new Date().toISOString(),
+    expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+  };
+
+  try { await supabaseInsert(uuid, payload); }
+  catch (e) {
+    overlay.remove();
+    showToast('❌ Export failed: ' + e.message, 'error');
+    updateExportButton();
+    return;
+  }
+
+  overlay.innerHTML = `
+    <div class="modal" style="text-align:center; max-width:360px;">
+      <h3>📤 Your Lists Are Ready!</h3>
+      <p style="color:var(--text-muted); margin-bottom:16px;">
+        Scan this QR code with the Fresh Pantry Import feature
+      </p>
+      <div id="qrcode" style="display:inline-block; padding:12px; background:#fff; border-radius:12px; margin:0 auto 16px;"></div>
+      <p style="font-size:11px; color:var(--text-dim); word-break:break-all; max-width:300px; margin:0 auto 12px;">${uuid}</p>
+      <div class="modal-actions" style="justify-content:center;">
+        <button class="btn-confirm" id="qrCloseBtn">Done</button>
+      </div>
+    </div>`;
+
+  new QRCode(document.getElementById('qrcode'), {
+    text: uuid,
+    width: 220,
+    height: 220,
+    colorDark: '#0f2d4a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById('qrCloseBtn').addEventListener('click', () => {
+    overlay.remove();
+    updateExportButton();
+    showToast('📤 Lists uploaded! Share the QR code.');
+  });
+
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) { overlay.remove(); updateExportButton(); }
+  });
+}
+
+// ─────────────────────────────────────────
+//  IMPORT — scan QR → fetch → burn → load
+// ─────────────────────────────────────────
+async function handleImportClick() {
+  try { await checkOnline(); }
+  catch (e) { showToast('❌ ' + e.message, 'error'); return; }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'scannerOverlay';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:400px;">
+      <h3>📥 Scan QR Code</h3>
+      <p style="color:var(--text-muted); margin-bottom:12px;">
+        Point your camera at a Fresh Pantry export QR code
+      </p>
+      <div id="scannerContainer" style="width:100%; aspect-ratio:1; max-width:320px; margin:0 auto; border-radius:12px; overflow:hidden; background:#000;"></div>
+      <p id="scannerStatus" style="font-size:13px; color:var(--text-dim); text-align:center; margin-top:10px;">⏳ Waiting for QR code…</p>
+      <div class="modal-actions" style="justify-content:center; margin-top:12px;">
+        <button class="btn-cancel" id="scannerCancelBtn">Cancel</button>
+      </div>
+    </div>`;
+  document.getElementById('modalContainer').appendChild(overlay);
+
+  let scanning = true;
+  const scanner = new Html5Qrcode("scannerContainer");
+
+  const stopScanner = async () => {
+    if (!scanning) return;
+    scanning = false;
+    try { await scanner.stop(); } catch {}
+    try { await scanner.clear(); } catch {}
+  };
+
+  const onScanSuccess = async (decodedText) => {
+    if (!scanning) return;
+    const uuid = decodedText.trim();
+    if (!uuid || uuid.length < 8) {
+      showToast('❌ Invalid QR code', 'error');
+      await stopScanner(); overlay.remove();
+      return;
+    }
+    await stopScanner();
+
+    overlay.innerHTML = `
+      <div class="modal" style="text-align:center;">
+        <h3>📥 Importing Lists</h3>
+        <div class="spinner" style="margin:20px auto;"></div>
+        <p style="color:var(--text-muted);">Downloading your lists…</p>
+      </div>`;
+
+    try {
+      const row = await supabaseSelect(uuid);
+      try { await supabaseDelete(uuid); } catch { /* burn after reading — non-critical if it fails */ }
+
+      const listData = row.list_data;
+      const importedLists = listData.lists || [];
+      if (importedLists.length === 0) {
+        overlay.remove();
+        showToast('❌ No lists found in the QR data', 'error');
+        return;
+      }
+
+      let importedCount = 0;
+      importedLists.forEach(list => {
+        state.lists.push({
           id: uid(),
-          name: item.name,
-          qty: item.qty || 1,
-          checked: !!item.checked
-        })),
-        createdAt: Date.now()
-      };
-      
-      state.lists.push(newList);
-      state.activeListId = newList.id;
+          name: list.name,
+          items: (list.items || []).map(item => ({
+            id: uid(),
+            name: item.name,
+            qty: item.qty || 1,
+            checked: false
+          })),
+          createdAt: Date.now()
+        });
+        importedCount++;
+      });
+
+      const firstIdx = state.lists.length - importedCount;
+      if (firstIdx >= 0) state.activeListId = state.lists[firstIdx].id;
+
       saveState(state);
       render();
-      showToast(`📥 "${newList.name}" imported!`);
-    } catch (err) {
-      showToast('❌ Invalid file format', 'error');
+      overlay.remove();
+      showToast(`📥 ${importedCount} list${importedCount !== 1 ? 's' : ''} imported!`);
+    } catch (e) {
+      overlay.remove();
+      showToast('❌ Import failed: ' + e.message, 'error');
     }
   };
-  reader.readAsText(file);
-}
 
-function handleImportClick() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json,application/json';
-  input.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      importList(file);
-    }
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 250, height: 250 } },
+    onScanSuccess,
+    () => {}
+  ).catch(() => {
+    overlay.remove();
+    showToast('❌ Camera access denied or unavailable', 'error');
   });
-  input.click();
+
+  document.getElementById('scannerCancelBtn').addEventListener('click', async () => {
+    await stopScanner(); overlay.remove();
+  });
+
+  overlay.addEventListener('click', async e => {
+    if (e.target === overlay) { await stopScanner(); overlay.remove(); }
+  });
 }
 
 // ─────────────────────────────────────────
